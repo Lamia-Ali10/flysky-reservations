@@ -4,20 +4,30 @@ import sqlite3
 import edit_reservation   # import the edit reservation page
 import home               # for back to home button
 
-def load_reservations():
+def load_reservations(name):
     # Clear table
     for row in tree.get_children():
         tree.delete(row)
 
-    # Fetch all reservations
+    # Fetch reservations only for this name
     conn = sqlite3.connect("flights.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM reservations")
+    cursor.execute("SELECT * FROM reservations WHERE name = ?", (name,))
     rows = cursor.fetchall()
     conn.close()
 
-    for row in rows:
-        tree.insert("", tk.END, values=row)
+    if rows:
+        for row in rows:
+            tree.insert("", tk.END, values=row)
+    else:
+        messagebox.showinfo("No Reservations", "No reservations found for this name.")
+
+def search_reservations():
+    name = name_entry.get().strip()
+    if not name:
+        messagebox.showwarning("Input Error", "Please enter your name!")
+        return
+    load_reservations(name)
 
 def on_row_double_click(event):
     selected_item = tree.selection()
@@ -29,24 +39,26 @@ def on_row_double_click(event):
     edit_reservation.create_edit_window(reservation_id)
 
 def create_reservations_window():
-    global tree, root
+    global tree, root, name_entry
     root = tk.Tk()
-    root.title("Reservations")
+    root.title("Your Reservations")
     root.geometry("800x500")
     root.configure(bg="white")
 
-    # --- Form Frame ---
-    form_frame = tk.Frame(root, bg="white")
-    form_frame.pack(fill="both", expand=True)
+    # --- Search Section ---
+    tk.Label(root, text="Enter Your Name:", font=("Arial", 14, "bold"),
+             bg="white", fg="black").pack(pady=5)
+    name_entry = tk.Entry(root, font=("Arial", 14), width=30)
+    name_entry.pack(pady=5)
 
-    # Title
-    tk.Label(form_frame, text="All Reservations",
-             font=("Arial", 18, "bold"),
-             fg="navy", bg="white").pack(pady=10)
+    tk.Button(root, text="Search Reservations",
+              font=("Arial", 12, "bold"),
+              bg="navy", fg="white",
+              command=search_reservations).pack(pady=10)
 
-    # Table
+    # --- Table ---
     columns = ("id", "name", "flight_number", "departure", "destination", "date", "seat_number")
-    tree = ttk.Treeview(form_frame, columns=columns, show="headings", height=15)
+    tree = ttk.Treeview(root, columns=columns, show="headings", height=10)
 
     for col in columns:
         tree.heading(col, text=col.capitalize())
@@ -54,26 +66,15 @@ def create_reservations_window():
 
     tree.pack(pady=10, fill="x")
 
-    # Double-click event
+    # Double-click event (to edit/delete)
     tree.bind("<Double-1>", on_row_double_click)
 
-    # Refresh button
-    tk.Button(form_frame, text="Refresh List",
-              font=("Arial", 12, "bold"),
-              bg="navy", fg="white",
-              command=load_reservations).pack(pady=10)
-
-    # --- Navigation Frame (Bottom) ---
-    nav_frame = tk.Frame(root, bg="white")
-    nav_frame.pack(fill="x", side="bottom")
-
-    tk.Button(nav_frame, text="Back to Home",
+    # --- Navigation ---
+    tk.Button(root, text="Back to Home",
               font=("Arial", 12, "bold"),
               bg="gray", fg="white",
               command=lambda: [root.destroy(), home.create_home_window()]
               ).pack(pady=10)
-
-    load_reservations()
 
     root.mainloop()
 

@@ -47,7 +47,7 @@ def create_booking_window():
     root.configure(bg="white")
 
     label_font = ("Arial", 14, "bold")
-    entry_font = ("Arial", 14)
+    entry_font = ("Arial", 18)
 
     # --- Form Frame ---
     form_frame = tk.Frame(root, bg="white")
